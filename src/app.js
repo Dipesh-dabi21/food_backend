@@ -1,0 +1,18 @@
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
+import menuRoutes from './routes/menu.routes.js';
+import orderRoutes from './routes/order.routes.js';
+import authRoutes from './routes/auth.routes.js';
+import { notFound, errorHandler } from './middleware/error.middleware.js';
+const app=express();
+const origins=(process.env.CLIENT_ORIGINS||'http://localhost:5173,http://localhost:5174').split(',').map(s=>s.trim());
+app.use(helmet());
+app.use(cors({origin(origin,cb){if(!origin||origins.includes(origin))return cb(null,true);return cb(new Error('Origin not allowed by CORS'));},credentials:true}));
+app.use(express.json({limit:'100kb'}));
+app.use(rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:true,legacyHeaders:false}));
+app.get('/api/health',(req,res)=>res.json({success:true,message:'Food order API is healthy'}));
+app.use('/api/auth',authRoutes);app.use('/api/menu',menuRoutes);app.use('/api/orders',orderRoutes);
+app.use(notFound);app.use(errorHandler);
+export default app;
